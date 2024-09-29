@@ -1,11 +1,11 @@
 
 from django.urls import path
 
-from tasks import views
+from tasks.views import TaskDetailView, TaskListView, TaskManagerInterface
 
 
 urlpatterns = [
-    path('tasks/', view=views.create_and_get_tasks, name='create_and_get_tasks'),
-    path('tasks/<int:task_id>/', view=views.get_delete_and_update_tasks, name='get_delete_and_update_tasks'),
-    path('task-manager/', view=views.task_manager_interface, name='task_manager_interface'),
+    path('tasks/', TaskListView.as_view(), name='tasks'),
+    path('tasks/<int:task_id>/', TaskDetailView.as_view(), name='get_delete_and_update_tasks'),
+    path('task-manager/', TaskManagerInterface.as_view(), name='task_manager_interface'),
 ]

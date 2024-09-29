@@ -16,9 +16,12 @@ def get_task_by_id(task_id: int) -> Task | None:
 
 
 def create_new_task(new_task: TaskSerializer) -> Task:
-    if new_task.is_valid():
+    if new_task.is_valid(raise_exception=True):
         task = new_task.save()
         return task
+    else:
+        raise ValueError('Invalid input')
+  
 
 
 def update_task(current_task: Task, task_data: TaskCreate) -> Task:

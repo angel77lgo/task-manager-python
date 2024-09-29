@@ -1,60 +1,69 @@
 import json
+from urllib.request import Request
 from django.http import JsonResponse
 from django.shortcuts import render
+from django.utils.decorators import method_decorator
+from django.views import View
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
 
 from tasks.form import TaskSerializer
-from tasks.services import create_new_task, delete_task, get_all_tasks, get_task_by_id, update_task
+from tasks.services import create_new_task, get_all_tasks, get_task_by_id, update_task
 
 
-@csrf_exempt
-@require_http_methods(["GET", "POST"])
-def create_and_get_tasks(request) -> JsonResponse:
-    try:
-        if request.method == 'GET':
-            tasks = get_all_tasks()  # Supongo que esta función retorna un QuerySet
+@method_decorator(csrf_exempt, name='dispatch')
+class TaskListView(View):
+    def get(self, request: Request) -> JsonResponse:
+        try:
+            tasks = get_all_tasks()
             return JsonResponse({'tasks': list(tasks.values())}, status=200)
-
-        elif request.method == 'POST':
-            try:
-                print('Enter in create_and_get_tasks POST')
-                task = TaskSerializer(data=json.loads(request.body))
-                new_task = create_new_task(task)
-                return JsonResponse({'task': new_task.id})
-            except json.JSONDecodeError:
-                return JsonResponse({'error': 'Invalid JSON'}, status=400)
-
-    except Exception as e:
-        # Manejo general de errores
-        return JsonResponse({'error': str(e)}, status=500)
-
-@csrf_exempt
-@require_http_methods(["GET", "PUT", "DELETE"])
-def get_delete_and_update_tasks(request, task_id: int) -> JsonResponse:
-    print('Enter in get_delete_and_update_tasks GET, PUT, DELETE')
-    task = get_task_by_id(task_id)
-
-    if task is None:
-        return JsonResponse({'error': 'Task not found'}, status=404)
-
-    try:
-        if request.method == 'GET':
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    def post(self, request: Request) -> JsonResponse:
+        try:
+            task_data = json.loads(request.body)
+            task = TaskSerializer(data=task_data)
+            print('task seralizer', task)
+            new_task = create_new_task(task)
+            print('new task', new_task)
+            return JsonResponse({'message': 'Task created successfully', 'taskId': new_task.id}, status=201)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid input'}, status=400)
+        except ValueError as e:
+            return JsonResponse({'error': str(e)}, status=400)
+        except Exception as e:
+            print(e)
+            return JsonResponse({'error': str(e)}, status=500)
+    
+@method_decorator(csrf_exempt, name='dispatch')
+class TaskDetailView(View):
+    def get(self, request: Request, task_id: int) -> JsonResponse:
+        task = get_task_by_id(task_id)
+        if task:
             task_serialized = TaskSerializer(task)
             return JsonResponse({'task': task_serialized.data}, status=200)
-        elif request.method == 'PUT':
-            new_task_data = json.loads(request.body)
-            print('new_task_data:', new_task_data)
-            task_updated = update_task(current_task=task, task_data=new_task_data)
-            return JsonResponse({'task': task_updated.id}, status=200)
-        elif request.method == 'DELETE':
-            delete_task(task)
-            return JsonResponse({'message': 'Task deleted successfully'}, status=200)
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
-    
+        return JsonResponse({'error': 'Task not found'}, status=404)
 
-    #Render the template
-@require_http_methods(["GET"])
-def task_manager_interface(request):
-    return render(request, 'task_manager.html')
+    def put(self, request: Request, task_id: int) -> JsonResponse:
+        task = get_task_by_id(task_id)
+        if not task:
+            return JsonResponse({'error': 'Task not found'}, status=404)
+        try:
+            new_task_data = json.loads(request.body)
+            task_updated = update_task(current_task=task, task_data=new_task_data)
+            return JsonResponse({'message': 'Task updated successfully', 'taskId': task_updated.id}, status=200)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON format'}, status=400)
+
+    def delete(self, request: Request, task_id: int) -> JsonResponse:
+        task = get_task_by_id(task_id)
+        if not task:
+            return JsonResponse({'error': 'Task not found'}, status=404)
+        task.delete()
+        return JsonResponse({'message': 'Task deleted successfully'}, status=200)
+
+
+class TaskManagerInterface(View):
+    def get(self, request: Request):
+        return render(request=request, template_name='task_manager.html')
+
