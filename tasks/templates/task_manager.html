@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+
+        th, td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f4f4f4;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="date"] {
+            width: 90%;
+            padding: 5px;
+            border: 1px solid #ccc;
+            font-size: 12px;
+        }
+
+        button {
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .actions button {
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Task Manager</h1>
+    <figure class="table">
+        <table id="taskTable">
+            <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>Title</th>
+                    <th>Descripción</th>
+                    <th>Email</th>
+                    <th>Fecha Vencimiento</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Fila de entrada para agregar nuevas tareas -->
+                <tr>
+                    <td><input type="text" id="newId" placeholder="ID" disabled /></td>
+                    <td><input type="text" id="newTitle" placeholder="Title" /></td>
+                    <td><input type="text" id="newDescription" placeholder="Descripción" /></td>
+                    <td><input type="email" id="newEmail" placeholder="Email" /></td>
+                    <td><input type="date" id="newDueDate" /></td>
+                    <td><button onclick="addTask()">Agregar</button></td>
+                </tr>
+                <!-- Aquí se insertarán las tareas obtenidas de la API -->
+            </tbody>
+        </table>
+    </figure>
+</div>
+
+<script>
+    const baseUrl = 'http://localhost:8000/api/tasks/'; // Ajusta esta URL a tu endpoint de API
+
+    // Obtener las tareas de la API y llenar la tabla
+    function fetchTasks() {
+        fetch(baseUrl, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const taskTable = document.getElementById('taskTable').getElementsByTagName('tbody')[0];
+
+            // Limpiar la tabla antes de llenarla, pero mantenemos la primera fila de inputs
+            taskTable.innerHTML = taskTable.rows[0].outerHTML;
+
+            data.tasks.forEach(task => {
+                const newRow = taskTable.insertRow();
+
+                newRow.insertCell(0).textContent = task.id;
+                newRow.insertCell(1).textContent = task.title;
+                newRow.insertCell(2).textContent = task.description;
+                newRow.insertCell(3).textContent = task.email;
+                newRow.insertCell(4).textContent = task.due_date ? new Date(task.due_date).toLocaleDateString() : 'N/A';
+                newRow.insertCell(5).innerHTML = `
+                    <div class="actions">
+                        <button onclick="editTask(${task.id}, this)">Actualizar</button>
+                        <button onclick="deleteTask(${task.id})">Eliminar</button>
+                    </div>
+                `;
+            });
+        })
+        .catch(error => console.error('Error fetching tasks:', error));
+    }
+
+    // Añadir una nueva tarea
+    function addTask() {
+        const title = document.getElementById('newTitle').value;
+        const description = document.getElementById('newDescription').value;
+        const email = document.getElementById('newEmail').value;
+        const dueDate = document.getElementById('newDueDate').value;
+
+        const newTask = { title, description, email };
+
+        // Añadir la fecha de vencimiento si existe
+        if (dueDate) {
+            newTask.due_date = dueDate;
+        }
+
+        fetch(baseUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(newTask),
+        })
+        .then(response => {
+            if (response.ok) {
+                console.log('Tarea añadida');
+                fetchTasks(); // Recargar las tareas después de añadir una nueva
+            } else {
+                console.error('Error al agregar tarea');
+            }
+        })
+        .catch(error => console.error('Error adding task:', error));
+
+        // Limpiar los campos de entrada
+        document.getElementById('newTitle').value = '';
+        document.getElementById('newDescription').value = '';
+        document.getElementById('newEmail').value = '';
+        document.getElementById('newDueDate').value = '';
+    }
+
+    // Editar una tarea, reemplazando los valores por inputs
+    function editTask(taskId, buttonElement) {
+        const row = buttonElement.closest('tr');
+        const titleCell = row.cells[1];
+        const descriptionCell = row.cells[2];
+        const emailCell = row.cells[3];
+        const dueDateCell = row.cells[4];
+        
+        // Cambiar los valores actuales por inputs
+        const currentTitle = titleCell.textContent;
+        const currentDescription = descriptionCell.textContent;
+        const currentEmail = emailCell.textContent;
+        const currentDueDate = dueDateCell.textContent === 'N/A' ? '' : currentDueDate;
+
+        titleCell.innerHTML = `<input type="text" value="${currentTitle}" />`;
+        descriptionCell.innerHTML = `<input type="text" value="${currentDescription}" />`;
+        emailCell.innerHTML = `<input type="email" value="${currentEmail}" />`;
+        dueDateCell.innerHTML = `<input type="date" value="${formatDateForInput(currentDueDate)}" />`;
+
+        // Cambiar el botón a "Guardar"
+        buttonElement.textContent = 'Guardar';
+        buttonElement.onclick = function() {
+            updateTask(taskId, row);
+        };
+    }
+
+    // Guardar la tarea después de la edición
+    function updateTask(taskId, row) {
+        const title = row.cells[1].querySelector('input').value;
+        const description = row.cells[2].querySelector('input').value;
+        const email = row.cells[3].querySelector('input').value;
+        const dueDate = row.cells[4].querySelector('input').value;
+
+        const updatedTask = { title, description, email };
+
+        // Añadir la fecha de vencimiento si se especificó
+        if (dueDate) {
+            updatedTask.due_date = dueDate;
+        }
+
+        fetch(`${baseUrl}${taskId}/`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(updatedTask),
+        })
+        .then(response => {
+            if (response.ok) {
+                console.log('Tarea actualizada');
+                fetchTasks(); // Recargar las tareas después de actualizar
+            } else {
+                console.error('Error al actualizar tarea');
+            }
+        })
+        .catch(error => console.error('Error updating task:', error));
+    }
+
+    // Eliminar una tarea
+    function deleteTask(taskId) {
+        if (confirm(`¿Estás seguro de que deseas eliminar la tarea con ID ${taskId}?`)) {
+            fetch(`${baseUrl}${taskId}/`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    console.log('Tarea eliminada');
+                    fetchTasks(); // Recargar las tareas después de eliminar una
+                } else {
+                    console.error('Error al eliminar tarea');
+                }
+            })
+            .catch(error => console.error('Error deleting task:', error));
+        }
+    }
+
+    function formatDateForInput(dateString) {
+        if (dateString === 'N/A') return '';
+        const dateParts = dateString.split('/');
+        const day = dateParts[0];
+        const month = dateParts[1];
+        const year = dateParts[2];
+        return `${year}-${month}-${day}`;
+    }
+
+    document.addEventListener('DOMContentLoaded', fetchTasks);
+</script>
+
+</body>
+</

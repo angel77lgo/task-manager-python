@@ -3,7 +3,7 @@ from tasks.models import Task
 from tasks.types import TaskCreate
 
 def get_all_tasks() -> list[Task]:
-    return Task.objects.all()
+    return Task.objects.all().order_by('-updated_at')
 
 
 def get_task_by_id(task_id: int) -> Task | None:
@@ -26,14 +26,6 @@ def update_task(current_task: Task, task_data: TaskCreate) -> Task:
     if new_task.is_valid():
         task = new_task.save()
         return task
-
-def update_task_2(task_id: int, task_data: TaskCreate) -> Task:
-    task = Task.objects.get(id=task_id)
-    new_task = TaskSerializer(instance=task, data=task_data, partial=True)
-    if new_task.is_valid():
-        task = new_task.save()
-        return task
-
 
 def delete_task(task: Task) -> None:
     task.delete()
