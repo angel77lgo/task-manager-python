@@ -5,9 +5,12 @@ from django.shortcuts import render
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
+import redis
 
 from tasks.form import TaskSerializer
 from tasks.services import create_new_task, get_all_tasks, get_task_by_id, update_task
+from tasks.tasks import add, send_task_mail_notifiaction, test
+from django.core.mail import send_mail
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -23,9 +26,11 @@ class TaskListView(View):
         try:
             task_data = json.loads(request.body)
             task = TaskSerializer(data=task_data)
-            print('task seralizer', task)
             new_task = create_new_task(task)
-            print('new task', new_task)
+            send_task_mail_notifiaction.delay('Nueva tarea asignada',
+                f'''Se ha creado una nueva tarea: {new_task.title}\n
+                descripcion: {new_task.description}''',['angel.de.oz.97@gmail.com'])
+    
             return JsonResponse({'message': 'Task created successfully', 'taskId': new_task.id}, status=201)
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid input'}, status=400)
@@ -66,4 +71,3 @@ class TaskDetailView(View):
 class TaskManagerInterface(View):
     def get(self, request: Request):
         return render(request=request, template_name='task_manager.html')
-

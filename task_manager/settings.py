@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'tasks',
     'corsheaders',
+    'celery',
 ]
 
 MIDDLEWARE = [
@@ -149,3 +150,13 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# Celery settings
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+
+# En desarrollo local, usa el backend de archivos
+EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+EMAIL_FILE_PATH = os.path.join(BASE_DIR, 'tmp', 'emails')  # Cambia esta ruta a donde quieras guardar los correos
