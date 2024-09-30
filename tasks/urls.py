@@ -1,7 +1,7 @@
 
 from django.urls import path
 
-from tasks.views import TaskDetailView, TaskListView, TaskManagerInterface
+from tasks.views.task_views import TaskDetailView, TaskListView, TaskManagerInterface
 
 
 urlpatterns = [

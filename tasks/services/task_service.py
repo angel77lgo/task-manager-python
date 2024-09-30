@@ -1,5 +1,5 @@
 from tasks.form import TaskSerializer
-from tasks.models import Task
+from tasks.models.task_model import Task
 from tasks.types import TaskCreate
 
 def get_all_tasks() -> list[Task]:

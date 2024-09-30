@@ -2,7 +2,7 @@ import re
 
 from rest_framework import serializers
 
-from tasks.models import Task
+from tasks.models.task_model import Task
 
 
 def validate_email(value):
