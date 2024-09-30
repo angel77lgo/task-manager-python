@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'tasks',
     'corsheaders',
     'celery',
+    'drf_yasg',
 ]
 
 MIDDLEWARE = [

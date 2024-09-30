@@ -6,6 +6,8 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 import redis
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework.views import APIView
 
 from tasks.form import TaskSerializer
 from tasks.services.mail_service import create_mail
@@ -17,14 +19,21 @@ from tasks.types import MailAction
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class TaskListView(View):
+class TaskListView(APIView):
+    @swagger_auto_schema(
+    responses={200: TaskSerializer(many=True)}
+    )
     def get(self, request: Request) -> JsonResponse:
         try:
             tasks = get_all_tasks()
             return JsonResponse({'tasks': list(tasks.values())}, status=200)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
-    
+
+    @swagger_auto_schema(
+        request_body=TaskSerializer,
+        responses={201: "Task created {id}"}
+    )
     def post(self, request: Request) -> JsonResponse:
         try:
             task_data = json.loads(request.body)
@@ -45,7 +54,10 @@ class TaskListView(View):
             return JsonResponse({'error': str(e)}, status=500)
     
 @method_decorator(csrf_exempt, name='dispatch')
-class TaskDetailView(View):
+class TaskDetailView(APIView):
+    @swagger_auto_schema(
+        responses={200: TaskSerializer()}
+    )
     def get(self, request: Request, task_id: int) -> JsonResponse:
         task = get_task_by_id(task_id)
         if task:
@@ -53,6 +65,10 @@ class TaskDetailView(View):
             return JsonResponse({'task': task_serialized.data}, status=200)
         return JsonResponse({'error': 'Task not found'}, status=404)
 
+    @swagger_auto_schema(
+        request_body=TaskSerializer,
+        responses={201: "Task updated successfully"},
+    )
     def put(self, request: Request, task_id: int) -> JsonResponse:
         task = get_task_by_id(task_id)
         if not task:
@@ -68,6 +84,9 @@ class TaskDetailView(View):
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON format'}, status=400)
 
+    @swagger_auto_schema(
+        responses={201: "Task deleted"}
+    )
     def delete(self, request: Request, task_id: int) -> JsonResponse:
         task = get_task_by_id(task_id)
         if not task:
@@ -75,7 +94,7 @@ class TaskDetailView(View):
         delete_task(task)
         return JsonResponse({'message': 'Task deleted successfully'}, status=200)
 
-
-class TaskManagerInterface(View):
+class TaskManagerInterface(APIView):
+    @swagger_auto_schema(auto_schema=None)
     def get(self, request: Request):
         return render(request=request, template_name='task_manager.html')
