@@ -8,7 +8,7 @@ from django.views.decorators.csrf import csrf_exempt
 import redis
 
 from tasks.form import TaskSerializer
-from tasks.services.task_service import create_new_task, get_all_tasks, get_task_by_id, update_task
+from tasks.services.task_service import create_new_task, delete_task, get_all_tasks, get_task_by_id, update_task
 from tasks.tasks import add, send_task_mail_notifiaction, test
 from django.core.mail import send_mail
 
@@ -64,7 +64,7 @@ class TaskDetailView(View):
         task = get_task_by_id(task_id)
         if not task:
             return JsonResponse({'error': 'Task not found'}, status=404)
-        task.delete()
+        delete_task(task)
         return JsonResponse({'message': 'Task deleted successfully'}, status=200)
 
 
