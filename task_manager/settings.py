@@ -14,6 +14,8 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
+from task_manager import env_vars
+
 
 load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -101,11 +103,11 @@ WSGI_APPLICATION = 'task_manager.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('DB_NAME'),
-        'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD'),
-        'HOST': os.getenv('DB_HOST'),
-        'PORT': os.getenv('DB_PORT'),
+        'NAME': env_vars.DB_NAME,
+        'USER': env_vars.DB_USER,
+        'PASSWORD': env_vars.DB_PASSWORD,
+        'HOST': env_vars.DB_HOST,
+        'PORT': env_vars.DB_PORT,
     }
 }
 
@@ -153,7 +155,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 # Celery settings
-CELERY_BROKER_URL = os.getenv('REDIS_URL')
+CELERY_BROKER_URL = env_vars.REDIS_URL
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 

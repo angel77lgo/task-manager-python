@@ -27,9 +27,12 @@ class TaskListView(View):
             task_data = json.loads(request.body)
             task = TaskSerializer(data=task_data)
             new_task = create_new_task(task)
-            send_task_mail_notifiaction.delay('Nueva tarea asignada',
-                f'''Se ha creado una nueva tarea: {new_task.title}\n
-                descripcion: {new_task.description}''',[new_task.email])
+
+            subject = 'Nueva tarea asignada'
+            message = f'''Se ha creado una nueva tarea: {new_task.title}\n descripcion: {new_task.description}'''
+            email = new_task.email
+            
+            send_task_mail_notifiaction.delay(subject, message, email)
     
             return JsonResponse({'message': 'Task created successfully', 'taskId': new_task.id}, status=201)
         except json.JSONDecodeError:
