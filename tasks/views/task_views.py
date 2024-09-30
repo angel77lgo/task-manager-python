@@ -9,7 +9,7 @@ import redis
 
 from tasks.form import TaskSerializer
 from tasks.services.task_service import create_new_task, delete_task, get_all_tasks, get_task_by_id, update_task
-from tasks.tasks import add, send_task_mail_notifiaction, test
+from tasks.tasks import send_task_mail_notifiaction
 from django.core.mail import send_mail
 
 
@@ -29,7 +29,7 @@ class TaskListView(View):
             new_task = create_new_task(task)
             send_task_mail_notifiaction.delay('Nueva tarea asignada',
                 f'''Se ha creado una nueva tarea: {new_task.title}\n
-                descripcion: {new_task.description}''',['angel.de.oz.97@gmail.com'])
+                descripcion: {new_task.description}''',[new_task.email])
     
             return JsonResponse({'message': 'Task created successfully', 'taskId': new_task.id}, status=201)
         except json.JSONDecodeError:
