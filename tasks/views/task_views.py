@@ -8,9 +8,12 @@ from django.views.decorators.csrf import csrf_exempt
 import redis
 
 from tasks.form import TaskSerializer
+from tasks.services.mail_service import create_mail
 from tasks.services.task_service import create_new_task, delete_task, get_all_tasks, get_task_by_id, update_task
 from tasks.tasks import send_task_mail_notifiaction
 from django.core.mail import send_mail
+
+from tasks.types import MailAction
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -28,11 +31,9 @@ class TaskListView(View):
             task = TaskSerializer(data=task_data)
             new_task = create_new_task(task)
 
-            subject = 'Nueva tarea asignada'
-            message = f'''Se ha creado una nueva tarea: {new_task.title}\n descripcion: {new_task.description}'''
-            email = new_task.email
+            mail_info = create_mail(MailAction.CREATE, new_task.title, new_task.description)
             
-            send_task_mail_notifiaction.delay(subject, message, email)
+            send_task_mail_notifiaction.delay(mail_info['subject'], mail_info['message'], new_task.email)
     
             return JsonResponse({'message': 'Task created successfully', 'taskId': new_task.id}, status=201)
         except json.JSONDecodeError:
@@ -59,6 +60,10 @@ class TaskDetailView(View):
         try:
             new_task_data = json.loads(request.body)
             task_updated = update_task(current_task=task, task_data=new_task_data)
+            
+            mail_info = create_mail(MailAction.UPDATE, task_updated.title, task_updated.description)
+            send_task_mail_notifiaction.delay(mail_info['subject'], mail_info['message'], task_updated.email)
+            
             return JsonResponse({'message': 'Task updated successfully', 'taskId': task_updated.id}, status=200)
         except json.JSONDecodeError:
             return JsonResponse({'error': 'Invalid JSON format'}, status=400)
