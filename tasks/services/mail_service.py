@@ -1,4 +1,3 @@
-import os
 from mailersend import emails
 
 from task_manager import env_vars
