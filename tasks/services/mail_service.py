@@ -24,7 +24,7 @@ def mail_send(subject: str, message: str, email: str) -> None:
 
     email_data = {
         'from': {
-            'email': 'taskmanager@trial-351ndgw2kvqgzqx8.mlsender.net',
+            'email': env_vars.MAILERSEND_EMAIL,
             'name': 'Task Manager'
         },
         'to': [
@@ -37,4 +37,5 @@ def mail_send(subject: str, message: str, email: str) -> None:
     }
 
 
-    mailer.send(email_data)
+    send = mailer.send(email_data)
+    print(send)
