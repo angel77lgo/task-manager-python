@@ -163,4 +163,9 @@ CELERY_TASK_SERIALIZER = 'json'
 
 # En desarrollo local, usa el backend de archivos
 EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
-EMAIL_FILE_PATH = os.path.join(BASE_DIR, 'tmp', 'emails')  # Cambia esta ruta a donde quieras guardar los correos
+EMAIL_FILE_PATH = os.path.join(BASE_DIR, 'tmp', 'emails')
+
+SWAGGER_SETTINGS = {
+    'LOGIN_URL': None,
+    'LOGOUT_URL': None,
+}
