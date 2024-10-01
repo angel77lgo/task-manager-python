@@ -4,3 +4,4 @@ __pycache__/
 tmp/
 db.sqlite3
 /data/
+.idea
